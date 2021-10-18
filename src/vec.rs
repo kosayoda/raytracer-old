@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 pub type Point = Vec3;
 pub type Color = Vec3;
@@ -44,6 +44,14 @@ impl Mul for Vec3 {
     }
 }
 
+impl Neg for Vec3 {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        self * -1.
+    }
+}
+
 // Scalar arithmetic
 impl Mul<f32> for Vec3 {
     type Output = Self;
@@ -81,12 +89,12 @@ impl Vec3 {
     }
 
     /// Dot product of two vectors
-    pub fn dot(self, other: &Vec3) -> f32 {
+    pub fn dot(self, other: Vec3) -> f32 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
     /// Cross product of two vectors
-    pub fn cross(self, other: &Vec3) -> Vec3 {
+    pub fn cross(self, other: Vec3) -> Vec3 {
         Self {
             x: self.y * other.z - self.z * other.y,
             y: self.y * other.x - self.x * other.y,
@@ -104,22 +112,22 @@ impl Vec3 {
         self.length_squared().sqrt()
     }
 
-    fn length_squared(self) -> f32 {
+    pub fn length_squared(self) -> f32 {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
 
     /// Get a reference to the vec3's z.
-    pub fn z(&self) -> &f32 {
-        &self.z
+    pub fn z(self) -> f32 {
+        self.z
     }
 
     /// Get a reference to the vec3's x.
-    pub fn x(&self) -> &f32 {
-        &self.x
+    pub fn x(self) -> f32 {
+        self.x
     }
 
     /// Get a reference to the vec3's y.
-    pub fn y(&self) -> &f32 {
-        &self.y
+    pub fn y(self) -> f32 {
+        self.y
     }
 }

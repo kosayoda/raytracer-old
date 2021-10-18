@@ -1,5 +1,6 @@
 use crate::vec::{Point, Vec3};
 
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Ray {
     origin: Point,
     direction: Vec3,
@@ -10,14 +11,12 @@ impl Ray {
         Self { origin, direction }
     }
 
-    /// Get a reference to the ray's origin.
-    pub fn origin(&self) -> &Point {
-        &self.origin
+    pub fn origin(self) -> Point {
+        self.origin
     }
 
-    /// Get a reference to the ray's direction.
-    pub fn direction(&self) -> &Vec3 {
-        &self.direction
+    pub fn direction(self) -> Vec3 {
+        self.direction
     }
 
     pub fn at(self, t: f32) -> Point {

@@ -3,7 +3,7 @@ use std::io::Write;
 
 use anyhow::Result;
 
-use raytracer::{Color, Point, Ray, Vec3};
+use raytracer::{Color, Hittable, Point, Ray, Sphere, Vec3};
 
 fn write_color(mut file: &File, color: &Color) -> Result<()> {
     let r = (color.x() * 255.999) as i32;
@@ -13,20 +13,11 @@ fn write_color(mut file: &File, color: &Color) -> Result<()> {
     Ok(())
 }
 
-fn hit_sphere(center: &Point, radius: f32, ray: &Ray) -> bool {
-    // Vector OC
-    let oc = *ray.origin() - *center;
-    let a = ray.direction().dot(ray.direction());
-    let b = 2. * oc.dot(ray.direction());
-    let c = oc.dot(&oc) - radius * radius;
-
-    return (b * b - 4. * a * c) > 0.;
-}
-
-fn ray_color(ray: &Ray) -> Color {
-    if hit_sphere(&Point::new(0., 0., -1.), 0.5, ray) {
-        return Color::new(1., 0., 0.);
+fn ray_color(ray: Ray, world: &dyn Hittable) -> Color {
+    if let Some(record) = world.hit(ray, 0., f32::MAX) {
+        return 0.5 * (record.normal() + Color::new(1., 1., 1.));
     }
+
     let unit_direction = ray.direction().unit_vector();
     let t = 0.5 * (unit_direction.y() + 1.);
 
@@ -55,6 +46,15 @@ fn main() -> Result<()> {
     let lower_left_corner: Point =
         origin - horizontal / 2. - vertical / 2. - Vec3::new(0., 0., FOCAL_LENGTH);
 
+    let spheres = vec![
+        Sphere::new(Point::new(0., 0., -1.), 0.5),
+        Sphere::new(Point::new(0., -100.5, -1.), 100.),
+    ];
+    let world: Vec<Box<dyn Hittable>> = spheres
+        .into_iter()
+        .map(|s| Box::new(s) as Box<dyn Hittable>)
+        .collect();
+
     // Display PPM file
     let name = "image.ppm";
     let mut file = File::create(name).expect("Failed to create file!");
@@ -77,7 +77,7 @@ fn main() -> Result<()> {
                 origin,
                 lower_left_corner + horizontal_offset + vertical_offset - origin,
             );
-            let pixel = ray_color(&ray);
+            let pixel = ray_color(ray, &world);
             write_color(&file, &pixel)?;
         }
     }
