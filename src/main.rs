@@ -2,16 +2,36 @@ use std::fs::File;
 use std::io::Write;
 
 use anyhow::Result;
+use rand::Rng;
 
+use raytracer::camera::Camera;
 use raytracer::hittable::Hittable;
 use raytracer::ray::Ray;
 use raytracer::sphere::Sphere;
-use raytracer::vec3::{Color, Point, Vec3};
+use raytracer::vec3::{Color, Point};
 
-fn write_color(mut file: &File, color: &Color) -> Result<()> {
-    let r = (color.x() * 255.999) as i32;
-    let g = (color.y() * 255.999) as i32;
-    let b = (color.z() * 255.999) as i32;
+// Image settings
+const ASPECT_RATIO: f32 = 16. / 9.;
+const IMAGE_WIDTH: i32 = 400;
+const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f32 / ASPECT_RATIO) as i32;
+const MAX_COLOR: i32 = 255;
+const SAMPLES_PER_PIXEL: i32 = 100;
+
+// Camera settings
+const VIEWPORT_HEIGHT: f32 = 2.;
+const VIEWPORT_WIDTH: f32 = ASPECT_RATIO * VIEWPORT_HEIGHT;
+const FOCAL_LENGTH: f32 = 1.;
+
+fn write_color(mut file: &File, color: &Color, scale: f32) -> Result<()> {
+    // Scale the colors
+    let _r = color.x() * scale;
+    let _g = color.y() * scale;
+    let _b = color.z() * scale;
+
+    // Clamp the colors to [0, 255]
+    let r = (256. * _r.clamp(0., 0.999)) as i32;
+    let g = (256. * _g.clamp(0., 0.999)) as i32;
+    let b = (256. * _b.clamp(0., 0.999)) as i32;
     writeln!(file, "{} {} {}", r, g, b)?;
     Ok(())
 }
@@ -32,22 +52,7 @@ fn ray_color(ray: Ray, world: &dyn Hittable) -> Color {
 }
 
 fn main() -> Result<()> {
-    // Image settings
-    const ASPECT_RATIO: f32 = 16. / 9.;
-    const IMAGE_WIDTH: i32 = 400;
-    const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f32 / ASPECT_RATIO) as i32;
-    const MAX_COLOR: i32 = 255;
-
-    // Camera settings
-    const VIEWPORT_HEIGHT: f32 = 2.;
-    const VIEWPORT_WIDTH: f32 = ASPECT_RATIO * VIEWPORT_HEIGHT;
-    const FOCAL_LENGTH: f32 = 1.;
-
-    let origin = Point::new(0., 0., 0.);
-    let horizontal = Vec3::new(VIEWPORT_WIDTH, 0., 0.);
-    let vertical = Vec3::new(0., VIEWPORT_HEIGHT, 0.);
-    let lower_left_corner: Point =
-        origin - horizontal / 2. - vertical / 2. - Vec3::new(0., 0., FOCAL_LENGTH);
+    let camera = Camera::new(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, FOCAL_LENGTH);
 
     let spheres = vec![
         Sphere::new(Point::new(0., 0., -1.), 0.5),
@@ -68,20 +73,19 @@ fn main() -> Result<()> {
     writeln!(file, "{}", MAX_COLOR)?;
 
     // Write data
+    let mut rng = rand::thread_rng();
     for j in (0..IMAGE_HEIGHT).rev() {
         print!("\rScanlines remaining: {} ", j);
         for i in 0..IMAGE_WIDTH {
-            let u = i as f32 / (IMAGE_WIDTH - 1) as f32;
-            let v = j as f32 / (IMAGE_HEIGHT - 1) as f32;
-            let horizontal_offset = u * horizontal;
-            let vertical_offset = v * vertical;
+            let mut pixel = Color::new(0., 0., 0.);
+            for _ in 0..SAMPLES_PER_PIXEL {
+                let u = ((i as f32) + rng.gen::<f32>()) / (IMAGE_WIDTH - 1) as f32;
+                let v = ((j as f32) + rng.gen::<f32>()) / (IMAGE_HEIGHT - 1) as f32;
 
-            let ray = Ray::new(
-                origin,
-                lower_left_corner + horizontal_offset + vertical_offset - origin,
-            );
-            let pixel = ray_color(ray, &world);
-            write_color(&file, &pixel)?;
+                let ray = (&camera).get_ray(u, v);
+                pixel = pixel + ray_color(ray, &world);
+            }
+            write_color(&file, &pixel, 1. / SAMPLES_PER_PIXEL as f32)?;
         }
     }
     println!("\nDone!");

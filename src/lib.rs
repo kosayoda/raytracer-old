@@ -1,3 +1,4 @@
+pub mod camera;
 pub mod hittable;
 mod types;
 
