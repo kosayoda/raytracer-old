@@ -81,12 +81,12 @@ impl Vec3 {
     }
 
     /// Dot product of two vectors
-    pub fn dot(self, other: Vec3) -> f32 {
+    pub fn dot(self, other: &Vec3) -> f32 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
     /// Cross product of two vectors
-    pub fn cross(self, other: Vec3) -> Vec3 {
+    pub fn cross(self, other: &Vec3) -> Vec3 {
         Self {
             x: self.y * other.z - self.z * other.y,
             y: self.y * other.x - self.x * other.y,

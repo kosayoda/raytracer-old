@@ -13,7 +13,20 @@ fn write_color(mut file: &File, color: &Color) -> Result<()> {
     Ok(())
 }
 
+fn hit_sphere(center: &Point, radius: f32, ray: &Ray) -> bool {
+    // Vector OC
+    let oc = *ray.origin() - *center;
+    let a = ray.direction().dot(ray.direction());
+    let b = 2. * oc.dot(ray.direction());
+    let c = oc.dot(&oc) - radius * radius;
+
+    return (b * b - 4. * a * c) > 0.;
+}
+
 fn ray_color(ray: &Ray) -> Color {
+    if hit_sphere(&Point::new(0., 0., -1.), 0.5, ray) {
+        return Color::new(1., 0., 0.);
+    }
     let unit_direction = ray.direction().unit_vector();
     let t = 0.5 * (unit_direction.y() + 1.);
 
