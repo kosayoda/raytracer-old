@@ -3,7 +3,10 @@ use std::io::Write;
 
 use anyhow::Result;
 
-use raytracer::{Color, Hittable, Point, Ray, Sphere, Vec3};
+use raytracer::hittable::Hittable;
+use raytracer::ray::Ray;
+use raytracer::sphere::Sphere;
+use raytracer::vec3::{Color, Point, Vec3};
 
 fn write_color(mut file: &File, color: &Color) -> Result<()> {
     let r = (color.x() * 255.999) as i32;
@@ -25,7 +28,7 @@ fn ray_color(ray: Ray, world: &dyn Hittable) -> Color {
     let min_y = Color::new(1., 1., 1.); // White
 
     // Lerp pixel color based on distance to camera
-    return (1. - t) * min_y + t * max_y;
+    (1. - t) * min_y + t * max_y
 }
 
 fn main() -> Result<()> {

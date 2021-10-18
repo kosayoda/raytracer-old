@@ -1,5 +1,5 @@
-use crate::ray::Ray;
-use crate::vec::{Point, Vec3};
+use crate::types::ray::Ray;
+use crate::types::vec3::{Point, Vec3};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct HitRecord {
@@ -34,7 +34,9 @@ impl Hittable for Vec<Box<dyn Hittable>> {
     fn hit(&self, ray: Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let mut closest_hit = None;
         for hittable in self {
+            // If we hit something
             if let Some(h) = hittable.hit(ray, t_min, t_max) {
+                // Compare with the current closest hit
                 match closest_hit {
                     None => closest_hit = Some(h),
                     Some(c) => {

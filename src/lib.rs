@@ -1,9 +1,4 @@
-mod hittable;
-mod ray;
-mod sphere;
-mod vec;
+pub mod hittable;
+mod types;
 
-pub use hittable::*;
-pub use ray::*;
-pub use sphere::*;
-pub use vec::*;
+pub use types::{ray, sphere, vec3};

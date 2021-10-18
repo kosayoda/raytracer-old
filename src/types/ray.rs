@@ -1,4 +1,4 @@
-use crate::vec::{Point, Vec3};
+use super::vec3::{Point, Vec3};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Ray {
@@ -19,6 +19,7 @@ impl Ray {
         self.direction
     }
 
+    /// Get the point along the vector at a certain param t
     pub fn at(self, t: f32) -> Point {
         self.origin + t * self.direction
     }

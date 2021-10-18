@@ -107,27 +107,28 @@ impl Vec3 {
         self / self.length()
     }
 
-    /// Length vector of the vector
+    /// Length of the vector
     pub fn length(self) -> f32 {
         self.length_squared().sqrt()
     }
 
+    /// Length of the vector squared
     pub fn length_squared(self) -> f32 {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
 
-    /// Get a reference to the vec3's z.
-    pub fn z(self) -> f32 {
-        self.z
-    }
-
-    /// Get a reference to the vec3's x.
+    /// Get the vec3's x.
     pub fn x(self) -> f32 {
         self.x
     }
 
-    /// Get a reference to the vec3's y.
+    /// Get the vec3's y.
     pub fn y(self) -> f32 {
         self.y
+    }
+
+    /// Get the vec3's z.
+    pub fn z(self) -> f32 {
+        self.z
     }
 }
