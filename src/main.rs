@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 
 use anyhow::Result;
 use rand::Rng;
@@ -22,7 +22,7 @@ const VIEWPORT_HEIGHT: f32 = 2.;
 const VIEWPORT_WIDTH: f32 = ASPECT_RATIO * VIEWPORT_HEIGHT;
 const FOCAL_LENGTH: f32 = 1.;
 
-fn write_color(mut file: &File, color: &Color, scale: f32) -> Result<()> {
+fn write_color(file: &mut BufWriter<File>, color: &Color, scale: f32) -> Result<()> {
     // Scale the colors
     let _r = color.x() * scale;
     let _g = color.y() * scale;
@@ -65,7 +65,8 @@ fn main() -> Result<()> {
 
     // Display PPM file
     let name = "image.ppm";
-    let mut file = File::create(name).expect("Failed to create file!");
+    let f = File::create(name).expect("Failed to create file!");
+    let mut file = BufWriter::new(f);
 
     // Write header
     writeln!(file, "P3")?;
@@ -74,20 +75,26 @@ fn main() -> Result<()> {
 
     // Write data
     let mut rng = rand::thread_rng();
+
+    let max_u = (IMAGE_WIDTH - 1) as f32;
+    let max_v = (IMAGE_HEIGHT - 1) as f32;
+
     for j in (0..IMAGE_HEIGHT).rev() {
-        print!("\rScanlines remaining: {} ", j);
+        eprint!("\rScanlines remaining: {} ", j);
+        let _j = j as f32;
         for i in 0..IMAGE_WIDTH {
+            let _i = i as f32;
             let mut pixel = Color::new(0., 0., 0.);
             for _ in 0..SAMPLES_PER_PIXEL {
-                let u = ((i as f32) + rng.gen::<f32>()) / (IMAGE_WIDTH - 1) as f32;
-                let v = ((j as f32) + rng.gen::<f32>()) / (IMAGE_HEIGHT - 1) as f32;
+                let u = (_i + rng.gen::<f32>()) / max_u;
+                let v = (_j + rng.gen::<f32>()) / max_v;
 
                 let ray = (&camera).get_ray(u, v);
                 pixel = pixel + ray_color(ray, &world);
             }
-            write_color(&file, &pixel, 1. / SAMPLES_PER_PIXEL as f32)?;
+            write_color(&mut file, &pixel, 1. / SAMPLES_PER_PIXEL as f32)?;
         }
     }
-    println!("\nDone!");
+    eprintln!("\nDone!");
     Ok(())
 }
