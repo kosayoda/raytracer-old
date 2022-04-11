@@ -39,7 +39,8 @@ pub struct Tracer {
     rng: ThreadRng,
     config: TracerConfig,
     current_x: i32,
-    current_y: i32,
+    current_y_forward: i32,
+    current_y_backward: i32,
 }
 
 impl Tracer {
@@ -49,7 +50,8 @@ impl Tracer {
             camera,
             rng: rand::thread_rng(),
             current_x: 0,
-            current_y: config.height - 1,
+            current_y_forward: config.height - 1,
+            current_y_backward: 0,
             config,
         }
     }
@@ -60,6 +62,7 @@ impl Tracer {
         if let Some(ext) = filepath.extension().and_then(|s| s.to_str()) {
             match ext {
                 "ppm" => self.save_as_ppm(file)?,
+                "bmp" => self.save_as_bmp(file)?,
                 _ => return Err(anyhow!("Unsupported filetype!")),
             }
         } else {
@@ -71,18 +74,74 @@ impl Tracer {
     }
 
     fn save_as_ppm<W: Write>(self, writable: W) -> Result<()> {
-        let mut writer = BufWriter::new(writable);
+        let mut file = BufWriter::new(writable);
 
         // Write header
-        writeln!(writer, "P3")?;
-        writeln!(writer, "{} {}", self.config.width, self.config.height)?;
-        writeln!(writer, "{}", 255)?; // Maximum color
+        writeln!(file, "P3")?;
+        writeln!(file, "{} {}", self.config.width, self.config.height)?;
+        writeln!(file, "{}", 255)?; // Maximum color
 
         // Write pixels
         let samples_per_pixel: i32 = self.config.samples_per_pixel;
         for mut pixel in self {
             pixel.correct_color(1. / samples_per_pixel as f32);
-            writeln!(writer, "{} {} {}", pixel.r(), pixel.g(), pixel.b())?;
+            writeln!(file, "{} {} {}", pixel.r(), pixel.g(), pixel.b())?;
+        }
+
+        Ok(())
+    }
+
+    fn save_as_bmp<W: Write>(self, writable: W) -> Result<()> {
+        let mut file = BufWriter::new(writable);
+
+        let mut bitmap_file_header: [u8; 14] = [
+            0x42, 0x4D, // BM marker
+            0xFF, 0xFF, 0xFF, 0xFF, // BMP file size in bytes
+            0x00, 0x00, 0x00, 0x00, // Reserved
+            0x36, 0x00, 0x00, 0x00, // Byte offset of the pixel array
+        ];
+        let mut dib_header: [u8; 40] = [
+            0x28, 0x00, 0x00, 0x00, // DIB header size in bytes
+            0xFF, 0xFF, 0xFF, 0xFF, // Bitmap pixel width
+            0xFF, 0xFF, 0xFF, 0xFF, // Bitmap pixel height
+            0x01, 0x00, // Number of color planes
+            0xFF, 0xFF, // Number of bits per pixel
+            0x00, 0x00, 0x00, 0x00, // BI_RGB, no pixel array compression
+            0xFF, 0xFF, 0xFF, 0xFF, // Size of raw bitmap data including padding
+            0x00, 0x00, 0x00, 0x00, // Print resolution (vertical)
+            0x00, 0x00, 0x00, 0x00, // Print resolution (horizontal)
+            0x00, 0x00, 0x00, 0x00, // Number of colors in the palette
+            0x00, 0x00, 0x00, 0x00, // Important colors (0 means all important)
+        ];
+
+        let bits_per_pixel: i32 = 24;
+        let row_size = (((bits_per_pixel * self.config.width) as f32 / 32.).ceil() * 4.) as usize;
+        let data_size = row_size * self.config.height as usize;
+
+        dib_header[4..=7].copy_from_slice(&(self.config.width as u32).to_le_bytes());
+        dib_header[8..=11].copy_from_slice(&(self.config.height as u32).to_le_bytes());
+        dib_header[14..=15].copy_from_slice(&(bits_per_pixel as u16).to_le_bytes());
+        dib_header[20..=23].copy_from_slice(&(data_size as u32).to_le_bytes());
+
+        let total_size = data_size + dib_header.len() + bitmap_file_header.len();
+        bitmap_file_header[2..=5].copy_from_slice(&(total_size as u32).to_le_bytes());
+
+        file.write_all(&bitmap_file_header)?;
+        file.write_all(&dib_header)?;
+
+        let padding_required = (4 - self.config.width % 4) % 4;
+        let samples_per_pixel: i32 = self.config.samples_per_pixel;
+        let width = self.config.width as usize;
+        for (idx, mut pixel) in self.rev().enumerate() {
+            pixel.correct_color(1. / samples_per_pixel as f32);
+            file.write_all(&[pixel.b() as u8, pixel.g() as u8, pixel.r() as u8])?;
+
+            // Write padding every row
+            if idx % width == 0 {
+                for _ in 0..padding_required {
+                    file.write_all(&[0_u8])?;
+                }
+            }
         }
 
         Ok(())
@@ -94,17 +153,51 @@ impl Iterator for Tracer {
 
     fn next(&mut self) -> Option<Self::Item> {
         // No more lines
-        if self.current_y == 0 && self.current_x == self.config.width {
+        if self.current_y_forward == 0 && self.current_x == self.config.width {
             return None;
         }
         // Move to next line
         if self.current_x == self.config.width {
-            eprint!("\rScanlines remaining: {}", self.current_y);
-            self.current_y -= 1;
+            eprint!("\rScanlines remaining: {}", self.current_y_forward);
+            self.current_y_forward -= 1;
             self.current_x = 0;
         }
 
-        let _j = self.current_y as f32;
+        let _j = self.current_y_forward as f32;
+        let _i = self.current_x as f32;
+        let mut pixel = Color::new(0., 0., 0.);
+
+        for _ in 0..self.config.samples_per_pixel {
+            let u = (_i + self.rng.gen::<f32>()) / self.config.max_u;
+            let v = (_j + self.rng.gen::<f32>()) / self.config.max_v;
+            let ray = (&self.camera).get_ray(u, v);
+            pixel = pixel + ray_color(ray, &self.world, &mut self.rng, self.config.max_depth);
+        }
+
+        self.current_x += 1;
+
+        Some(pixel)
+    }
+}
+
+impl DoubleEndedIterator for Tracer {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        // No more lines
+        if self.current_y_backward == self.config.height + 1 && self.current_x == self.config.width
+        {
+            return None;
+        }
+        // Move to next line
+        if self.current_x == self.config.width {
+            eprint!(
+                "\rScanlines remaining: {}",
+                self.config.height - self.current_y_backward
+            );
+            self.current_y_backward += 1;
+            self.current_x = 0;
+        }
+
+        let _j = self.current_y_backward as f32;
         let _i = self.current_x as f32;
         let mut pixel = Color::new(0., 0., 0.);
 

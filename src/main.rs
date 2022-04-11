@@ -35,7 +35,7 @@ fn main() -> Result<()> {
     let config = TracerConfig::new(IMAGE_WIDTH, IMAGE_HEIGHT, SAMPLES_PER_PIXEL, MAX_DEPTH);
     let tracer = Tracer::new(world, camera, config);
 
-    tracer.save(Path::new("image.ppm"))?;
+    tracer.save(Path::new("image.bmp"))?;
     eprintln!("\nDone!");
     Ok(())
 }
