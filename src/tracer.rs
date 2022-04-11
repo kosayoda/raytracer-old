@@ -1,3 +1,8 @@
+use std::fs::File;
+use std::io::{BufWriter, Write};
+use std::path::Path;
+
+use anyhow::{anyhow, Result};
 use rand::prelude::ThreadRng;
 use rand::Rng;
 
@@ -47,6 +52,40 @@ impl Tracer {
             current_y: config.height - 1,
             config,
         }
+    }
+
+    pub fn save(self, filepath: &Path) -> Result<()> {
+        let file = File::create(filepath)?;
+
+        if let Some(ext) = filepath.extension().and_then(|s| s.to_str()) {
+            match ext {
+                "ppm" => self.save_as_ppm(file)?,
+                _ => return Err(anyhow!("Unsupported filetype!")),
+            }
+        } else {
+            println!("No filetype given, defaulting to ppm...");
+            self.save_as_ppm(file)?;
+        }
+
+        Ok(())
+    }
+
+    fn save_as_ppm<W: Write>(self, writable: W) -> Result<()> {
+        let mut writer = BufWriter::new(writable);
+
+        // Write header
+        writeln!(writer, "P3")?;
+        writeln!(writer, "{} {}", self.config.width, self.config.height)?;
+        writeln!(writer, "{}", 255)?; // Maximum color
+
+        // Write pixels
+        let samples_per_pixel: i32 = self.config.samples_per_pixel;
+        for mut pixel in self {
+            pixel.correct_color(1. / samples_per_pixel as f32);
+            writeln!(writer, "{} {} {}", pixel.r(), pixel.g(), pixel.b())?;
+        }
+
+        Ok(())
     }
 }
 

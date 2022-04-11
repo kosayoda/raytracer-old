@@ -1,5 +1,4 @@
-use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::path::Path;
 
 use anyhow::Result;
 
@@ -11,9 +10,8 @@ use raytracer::vec3::Point;
 
 // Image settings
 const ASPECT_RATIO: f32 = 16. / 9.;
-const IMAGE_WIDTH: i32 = 400;
+const IMAGE_WIDTH: i32 = 800;
 const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f32 / ASPECT_RATIO) as i32;
-const MAX_COLOR: i32 = 255;
 const SAMPLES_PER_PIXEL: i32 = 100;
 
 const MAX_DEPTH: i32 = 50;
@@ -25,7 +23,6 @@ const FOCAL_LENGTH: f32 = 1.;
 
 fn main() -> Result<()> {
     let camera = Camera::new(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, FOCAL_LENGTH);
-
     let spheres = vec![
         Sphere::new(Point::new(0., 0., -1.), 0.5),
         Sphere::new(Point::new(0., -100.5, -1.), 100.),
@@ -35,24 +32,10 @@ fn main() -> Result<()> {
         .map(|s| Box::new(s) as Box<dyn Hittable>)
         .collect();
 
-    // Display PPM file
-    let name = "image.ppm";
-    let f = File::create(name).expect("Failed to create file!");
-    let mut file = BufWriter::new(f);
-
-    // Write header
-    writeln!(file, "P3")?;
-    writeln!(file, "{} {}", IMAGE_WIDTH, IMAGE_HEIGHT)?;
-    writeln!(file, "{}", MAX_COLOR)?;
-
-    // Write data
     let config = TracerConfig::new(IMAGE_WIDTH, IMAGE_HEIGHT, SAMPLES_PER_PIXEL, MAX_DEPTH);
-
     let tracer = Tracer::new(world, camera, config);
-    for mut pixel in tracer {
-        pixel.correct_color(1. / SAMPLES_PER_PIXEL as f32);
-        writeln!(file, "{} {} {}", pixel.r(), pixel.g(), pixel.b())?;
-    }
+
+    tracer.save(Path::new("image.ppm"))?;
     eprintln!("\nDone!");
     Ok(())
 }
