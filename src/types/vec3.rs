@@ -1,5 +1,7 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
+use rand::{prelude::ThreadRng, Rng};
+
 pub type Point = Vec3;
 pub type Color = Vec3;
 
@@ -88,12 +90,33 @@ impl Vec3 {
         Self { x, y, z }
     }
 
+    /// Create a new Vec3 with random coordinates
+    pub fn new_random(rng: &mut ThreadRng, _min: f32, _max: f32) -> Self {
+        Self {
+            x: rng.gen_range(_min.._max),
+            y: rng.gen_range(_min.._max),
+            z: rng.gen_range(_min.._max),
+        }
+    }
+
+    /// Create a new Vec3 with random coordinates
+    pub fn new_random_in_unit_sphere(rng: &mut ThreadRng) -> Self {
+        let mut p;
+        loop {
+            p = Vec3::new_random(rng, -1., 1.);
+            if p.length_squared() < 1. {
+                return p;
+            }
+        }
+    }
+
     /// Dot product of two vectors
     pub fn dot(self, other: Vec3) -> f32 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
     /// Cross product of two vectors
+    #[must_use]
     pub fn cross(self, other: Vec3) -> Vec3 {
         Self {
             x: self.y * other.z - self.z * other.y,
@@ -103,6 +126,7 @@ impl Vec3 {
     }
 
     /// Unit vector of the vector
+    #[must_use]
     pub fn unit_vector(self) -> Self {
         self / self.length()
     }
@@ -130,5 +154,32 @@ impl Vec3 {
     /// Get the vec3's z.
     pub fn z(self) -> f32 {
         self.z
+    }
+}
+
+impl Color {
+    pub fn correct_color(&mut self, scale: f32) {
+        // Scale the colors
+        let _r = self.x() * scale;
+        let _g = self.y() * scale;
+        let _b = self.z() * scale;
+
+        // Clamp the colors to [0, 255]
+        // Correct gamma for gamma 2.0
+        self.x = 256. * _r.sqrt().clamp(0., 0.999);
+        self.y = 256. * _g.sqrt().clamp(0., 0.999);
+        self.z = 256. * _b.sqrt().clamp(0., 0.999);
+    }
+
+    pub fn r(self) -> i32 {
+        self.x as i32
+    }
+
+    pub fn g(self) -> i32 {
+        self.y as i32
+    }
+
+    pub fn b(self) -> i32 {
+        self.z as i32
     }
 }
