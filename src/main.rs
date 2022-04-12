@@ -10,7 +10,7 @@ use raytracer::vec3::Point;
 
 // Image settings
 const ASPECT_RATIO: f32 = 16. / 9.;
-const IMAGE_WIDTH: i32 = 800;
+const IMAGE_WIDTH: i32 = 400;
 const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f32 / ASPECT_RATIO) as i32;
 const SAMPLES_PER_PIXEL: i32 = 100;
 
@@ -35,7 +35,7 @@ fn main() -> Result<()> {
     let config = TracerConfig::new(IMAGE_WIDTH, IMAGE_HEIGHT, SAMPLES_PER_PIXEL, MAX_DEPTH);
     let tracer = Tracer::new(world, camera, config);
 
-    tracer.save(Path::new("image.bmp"))?;
+    tracer.save(Path::new("image.png"))?;
     eprintln!("\nDone!");
     Ok(())
 }

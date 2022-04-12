@@ -6,3 +6,4 @@ An implementation of [Ray Tracing in One Weekend](https://raytracing.github.io/b
 #### Supported File Formats
 - Ascii PPM
 - Uncompressed BMP
+- PNG

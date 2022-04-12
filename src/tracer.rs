@@ -1,13 +1,18 @@
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
+use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
+use flate2::write::ZlibEncoder;
+use flate2::Compression;
 use rand::prelude::ThreadRng;
 use rand::Rng;
 
 use crate::camera::Camera;
 use crate::hittable::Hittable;
+use crate::png::Chunk;
+use crate::png::ChunkType;
 use crate::ray::Ray;
 use crate::vec3::{Color, Point, Vec3};
 
@@ -63,6 +68,7 @@ impl Tracer {
             match ext {
                 "ppm" => self.save_as_ppm(file)?,
                 "bmp" => self.save_as_bmp(file)?,
+                "png" => self.save_as_png(file)?,
                 _ => return Err(anyhow!("Unsupported filetype!")),
             }
         } else {
@@ -134,7 +140,7 @@ impl Tracer {
         let width = self.config.width as usize;
         for (idx, mut pixel) in self.rev().enumerate() {
             pixel.correct_color(1. / samples_per_pixel as f32);
-            file.write_all(&[pixel.b() as u8, pixel.g() as u8, pixel.r() as u8])?;
+            file.write_all(&[pixel.b(), pixel.g(), pixel.r()])?;
 
             // Write padding every row
             if idx % width == 0 {
@@ -143,6 +149,54 @@ impl Tracer {
                 }
             }
         }
+
+        Ok(())
+    }
+
+    // PNG Format taken from: http://www.libpng.org/pub/png/spec/1.2/PNG-Contents.html
+    // PNG Chunk/ChunkType scaffold + tests taken from https://picklenerd.github.io/pngme_book/
+    fn save_as_png<W: Write>(self, writable: W) -> Result<()> {
+        let mut file = BufWriter::new(writable);
+
+        // Write PNG Header
+        file.write_all(&[137, 80, 78, 71, 13, 10, 26, 10])?;
+
+        // Write IHDR chunk
+        let mut ihdr_data: [u8; 13] = [
+            0xFF, 0xFF, 0xFF, 0xFF, // Pixel width
+            0xFF, 0xFF, 0xFF, 0xFF, // Pixel height
+            0x8,  // Bit depth (number of bits per sample, NOT per pixel)
+            0x2,  // Color type
+            0x0,  // Compression method
+            0x0,  // Filter method
+            0x0,  // Interlace method
+        ];
+        ihdr_data[0..=3].copy_from_slice(&(self.config.width as u32).to_be_bytes());
+        ihdr_data[4..=7].copy_from_slice(&(self.config.height as u32).to_be_bytes());
+
+        file.write_all(
+            &Chunk::new(ChunkType::from_str("IHDR").unwrap(), ihdr_data.to_vec()).as_bytes(),
+        )?;
+
+        // TODO: Swap out flate2 for handwritten zlib compression
+        let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
+
+        let samples_per_pixel: i32 = self.config.samples_per_pixel;
+        let width = self.config.width as usize;
+        for (idx, mut pixel) in self.enumerate() {
+            // Write filter-type byte every row
+            if idx % width == 0 {
+                e.write_all(&[0])?;
+            }
+            pixel.correct_color(1. / samples_per_pixel as f32);
+            e.write_all(&[pixel.r(), pixel.g(), pixel.b()])?;
+        }
+
+        let compressed = e.finish()?;
+        file.write_all(&Chunk::new(ChunkType::from_str("IDAT").unwrap(), compressed).as_bytes())?;
+
+        // Write IEND chunk
+        file.write_all(&Chunk::new(ChunkType::from_str("IEND").unwrap(), [].to_vec()).as_bytes())?;
 
         Ok(())
     }
@@ -187,6 +241,7 @@ impl DoubleEndedIterator for Tracer {
         {
             return None;
         }
+
         // Move to next line
         if self.current_x == self.config.width {
             eprint!(

@@ -171,15 +171,15 @@ impl Color {
         self.z = 256. * _b.sqrt().clamp(0., 0.999);
     }
 
-    pub fn r(self) -> i32 {
-        self.x as i32
+    pub fn r(self) -> u8 {
+        self.x as u8
     }
 
-    pub fn g(self) -> i32 {
-        self.y as i32
+    pub fn g(self) -> u8 {
+        self.y as u8
     }
 
-    pub fn b(self) -> i32 {
-        self.z as i32
+    pub fn b(self) -> u8 {
+        self.z as u8
     }
 }
