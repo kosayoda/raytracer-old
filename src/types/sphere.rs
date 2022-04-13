@@ -1,15 +1,21 @@
 use super::ray::Ray;
 use super::vec3::Point;
 use crate::hittable::{HitRecord, Hittable};
+use crate::material::Material;
 
 pub struct Sphere {
     center: Point,
     radius: f32,
+    material: &'static Material,
 }
 
 impl Sphere {
-    pub fn new(center: Point, radius: f32) -> Self {
-        Self { center, radius }
+    pub fn new(center: Point, radius: f32, material: &'static Material) -> Self {
+        Self {
+            center,
+            radius,
+            material,
+        }
     }
 }
 
@@ -51,6 +57,7 @@ impl Hittable for Sphere {
                     point,
                     (point - self.center) / self.radius,
                     t,
+                    self.material,
                 ));
             }
         }

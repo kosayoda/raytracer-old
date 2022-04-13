@@ -1,12 +1,14 @@
 use std::path::Path;
 
 use anyhow::Result;
+use once_cell::sync::Lazy;
 
 use raytracer::camera::Camera;
 use raytracer::hittable::Hittable;
+use raytracer::material::{Lambertian, Material, Metal};
 use raytracer::sphere::Sphere;
 use raytracer::tracer::{Tracer, TracerConfig};
-use raytracer::vec3::Point;
+use raytracer::vec3::{Color, Point};
 
 // Image settings
 const ASPECT_RATIO: f32 = 16. / 9.;
@@ -23,9 +25,35 @@ const FOCAL_LENGTH: f32 = 1.;
 
 fn main() -> Result<()> {
     let camera = Camera::new(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, FOCAL_LENGTH);
+
+    // Create materials
+    static MATERIAL_GROUND: Lazy<Material> = Lazy::new(|| {
+        Material::from(Lambertian {
+            albedo: Color::new(0.69, 0.61, 0.85),
+        })
+    });
+    static MATERIAL_CENTER: Lazy<Material> = Lazy::new(|| {
+        Material::from(Lambertian {
+            albedo: Color::new(0.7, 0.3, 0.3),
+        })
+    });
+    static MATERIAL_LEFT: Lazy<Material> = Lazy::new(|| {
+        Material::from(Metal {
+            albedo: Color::new(0.8, 0.8, 0.8),
+            fuzz: 0.3,
+        })
+    });
+    static MATERIAL_RIGHT: Lazy<Material> = Lazy::new(|| {
+        Material::from(Metal {
+            albedo: Color::new(0.8, 0.6, 0.2),
+            fuzz: 1.0,
+        })
+    });
     let spheres = vec![
-        Sphere::new(Point::new(0., 0., -1.), 0.5),
-        Sphere::new(Point::new(0., -100.5, -1.), 100.),
+        Sphere::new(Point::new(0.0, -100.5, -1.0), 100., &MATERIAL_GROUND),
+        Sphere::new(Point::new(0.0, 0.0, -1.0), 0.5, &MATERIAL_CENTER),
+        Sphere::new(Point::new(-1.0, 0.0, -1.0), 0.5, &MATERIAL_LEFT),
+        Sphere::new(Point::new(1.0, 0.0, -1.0), 0.5, &MATERIAL_RIGHT),
     ];
     let world: Vec<Box<dyn Hittable>> = spheres
         .into_iter()

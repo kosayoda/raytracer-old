@@ -1,3 +1,4 @@
+use crate::material::Material;
 use crate::types::ray::Ray;
 use crate::types::vec3::{Point, Vec3};
 
@@ -6,11 +7,17 @@ pub struct HitRecord {
     point: Point,
     normal: Vec3,
     t: f32,
+    material: &'static Material,
 }
 
 impl HitRecord {
-    pub fn new(point: Point, normal: Vec3, t: f32) -> Self {
-        Self { point, normal, t }
+    pub fn new(point: Point, normal: Vec3, t: f32, material: &'static Material) -> Self {
+        Self {
+            point,
+            normal,
+            t,
+            material,
+        }
     }
 
     pub fn point(self) -> Point {
@@ -23,6 +30,10 @@ impl HitRecord {
 
     pub fn t(self) -> f32 {
         self.t
+    }
+
+    pub fn material(self) -> &'static Material {
+        self.material
     }
 }
 

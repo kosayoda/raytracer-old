@@ -6,15 +6,16 @@ use std::str::FromStr;
 use anyhow::{anyhow, Result};
 use flate2::write::ZlibEncoder;
 use flate2::Compression;
-use rand::prelude::ThreadRng;
-use rand::Rng;
+use rand::rngs::SmallRng;
+use rand::{Rng, SeedableRng};
 
 use crate::camera::Camera;
 use crate::hittable::Hittable;
+use crate::material::Scatterable;
 use crate::png::Chunk;
 use crate::png::ChunkType;
 use crate::ray::Ray;
-use crate::vec3::{Color, Point, Vec3};
+use crate::vec3::{Color, Vec3};
 
 pub struct TracerConfig {
     width: i32,
@@ -41,7 +42,6 @@ impl TracerConfig {
 pub struct Tracer {
     world: Vec<Box<dyn Hittable>>,
     camera: Camera,
-    rng: ThreadRng,
     config: TracerConfig,
     current_x: i32,
     current_y_forward: i32,
@@ -53,7 +53,6 @@ impl Tracer {
         Self {
             world,
             camera,
-            rng: rand::thread_rng(),
             current_x: 0,
             current_y_forward: config.height - 1,
             current_y_backward: 0,
@@ -221,11 +220,12 @@ impl Iterator for Tracer {
         let _i = self.current_x as f32;
         let mut pixel = Color::new(0., 0., 0.);
 
+        let mut rng = SmallRng::from_entropy();
         for _ in 0..self.config.samples_per_pixel {
-            let u = (_i + self.rng.gen::<f32>()) / self.config.max_u;
-            let v = (_j + self.rng.gen::<f32>()) / self.config.max_v;
+            let u = (_i + rng.gen::<f32>()) / self.config.max_u;
+            let v = (_j + rng.gen::<f32>()) / self.config.max_v;
             let ray = (&self.camera).get_ray(u, v);
-            pixel = pixel + ray_color(ray, &self.world, &mut self.rng, self.config.max_depth);
+            pixel = pixel + ray_color(ray, &self.world, self.config.max_depth);
         }
 
         self.current_x += 1;
@@ -252,15 +252,16 @@ impl DoubleEndedIterator for Tracer {
             self.current_x = 0;
         }
 
+        let mut rng = SmallRng::from_entropy();
         let _j = self.current_y_backward as f32;
         let _i = self.current_x as f32;
         let mut pixel = Color::new(0., 0., 0.);
 
         for _ in 0..self.config.samples_per_pixel {
-            let u = (_i + self.rng.gen::<f32>()) / self.config.max_u;
-            let v = (_j + self.rng.gen::<f32>()) / self.config.max_v;
+            let u = (_i + rng.gen::<f32>()) / self.config.max_u;
+            let v = (_j + rng.gen::<f32>()) / self.config.max_v;
             let ray = (&self.camera).get_ray(u, v);
-            pixel = pixel + ray_color(ray, &self.world, &mut self.rng, self.config.max_depth);
+            pixel = pixel + ray_color(ray, &self.world, self.config.max_depth);
         }
 
         self.current_x += 1;
@@ -269,19 +270,15 @@ impl DoubleEndedIterator for Tracer {
     }
 }
 
-fn ray_color(ray: Ray, world: &dyn Hittable, rng: &mut ThreadRng, depth: i32) -> Color {
+fn ray_color(ray: Ray, world: &dyn Hittable, depth: i32) -> Color {
     if depth <= 0 {
         return Color::new(0., 0., 0.);
     }
     if let Some(record) = world.hit(ray, 0.001, f32::MAX) {
-        let target = record.point() + record.normal() + Point::new_random_in_unit_sphere(rng);
-        return 0.5
-            * ray_color(
-                Ray::new(record.point(), target - record.point()),
-                world,
-                rng,
-                depth - 1,
-            );
+        if let Some(res) = record.material().scatter(&ray, &record) {
+            return res.attenuation * ray_color(res.ray, world, depth - 1);
+        }
+        return Color::new(0., 0., 0.);
     }
 
     let unit_direction = ray.direction().unit_vector();

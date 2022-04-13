@@ -1,11 +1,12 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-use rand::{prelude::ThreadRng, Rng};
+use rand::rngs::SmallRng;
+use rand::{Rng, SeedableRng};
 
 pub type Point = Vec3;
 pub type Color = Vec3;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct Vec3 {
     x: f32,
     y: f32,
@@ -91,7 +92,8 @@ impl Vec3 {
     }
 
     /// Create a new Vec3 with random coordinates
-    pub fn new_random(rng: &mut ThreadRng, _min: f32, _max: f32) -> Self {
+    pub fn new_random(_min: f32, _max: f32) -> Self {
+        let mut rng = SmallRng::from_entropy();
         Self {
             x: rng.gen_range(_min.._max),
             y: rng.gen_range(_min.._max),
@@ -100,14 +102,20 @@ impl Vec3 {
     }
 
     /// Create a new Vec3 with random coordinates
-    pub fn new_random_in_unit_sphere(rng: &mut ThreadRng) -> Self {
+    pub fn new_random_in_unit_sphere() -> Self {
         let mut p;
         loop {
-            p = Vec3::new_random(rng, -1., 1.);
+            p = Vec3::new_random(-1., 1.);
             if p.length_squared() < 1. {
                 return p;
             }
         }
+    }
+
+    /// Create a new unit vector with random coordinates
+    pub fn new_random_unit_vector() -> Self {
+        let v = Vec3::new_random_in_unit_sphere();
+        v.unit_vector()
     }
 
     /// Dot product of two vectors
@@ -139,6 +147,11 @@ impl Vec3 {
     /// Length of the vector squared
     pub fn length_squared(self) -> f32 {
         self.x * self.x + self.y * self.y + self.z * self.z
+    }
+
+    /// Whether the vector is close to zero in all dimensions
+    pub fn is_near_zero(self) -> bool {
+        self.x.abs() < f32::EPSILON && self.y.abs() < f32::EPSILON && self.z.abs() < f32::EPSILON
     }
 
     /// Get the vec3's x.
