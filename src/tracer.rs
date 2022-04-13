@@ -273,7 +273,7 @@ fn ray_color(ray: Ray, world: &dyn Hittable, rng: &mut ThreadRng, depth: i32) ->
     if depth <= 0 {
         return Color::new(0., 0., 0.);
     }
-    if let Some(record) = world.hit(ray, 0., f32::MAX) {
+    if let Some(record) = world.hit(ray, 0.001, f32::MAX) {
         let target = record.point() + record.normal() + Point::new_random_in_unit_sphere(rng);
         return 0.5
             * ray_color(
