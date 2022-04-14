@@ -2,6 +2,7 @@ use super::ray::Ray;
 use super::vec3::Point;
 use crate::hittable::{HitRecord, Hittable};
 use crate::material::Material;
+use crate::vec3::Vec3;
 
 pub struct Sphere {
     center: Point,
@@ -50,17 +51,34 @@ impl Hittable for Sphere {
         // Real roots, ie. intersection of sphere
         if discriminant > 0. {
             // Obtain a root using quadratic formula
-            let t = (-h - discriminant.sqrt()) / a;
-            if t_min < t && t < t_max {
-                let point = ray.at(t);
-                return Some(HitRecord::new(
-                    point,
-                    (point - self.center) / self.radius,
-                    t,
-                    self.material,
-                ));
+            let mut t = (-h - discriminant.sqrt()) / a;
+            if t < t_min || t_max < t {
+                t = (-h + discriminant.sqrt()) / a;
+                if t < t_min || t_max < t {
+                    return None;
+                }
             }
+
+            let point = ray.at(t);
+            let outward_normal = (point - self.center) / self.radius;
+            let front_face = is_front_face(&ray, &outward_normal);
+            let outward_normal = if front_face {
+                outward_normal
+            } else {
+                -outward_normal
+            };
+            return Some(HitRecord::new(
+                point,
+                outward_normal,
+                t,
+                front_face,
+                self.material,
+            ));
         }
         None
     }
+}
+
+fn is_front_face(ray: &Ray, outward_normal: &Vec3) -> bool {
+    ray.direction().dot(*outward_normal) < 0.
 }
