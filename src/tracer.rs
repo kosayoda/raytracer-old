@@ -8,6 +8,7 @@ use flate2::write::ZlibEncoder;
 use flate2::Compression;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
+use rayon::prelude::*;
 
 use crate::camera::Camera;
 use crate::hittable::Hittable;
@@ -40,7 +41,7 @@ impl TracerConfig {
 }
 
 pub struct Tracer {
-    world: Vec<Box<dyn Hittable>>,
+    world: Vec<Box<dyn Hittable + Send + Sync>>,
     camera: Camera,
     config: TracerConfig,
     current_x: i32,
@@ -49,7 +50,11 @@ pub struct Tracer {
 }
 
 impl Tracer {
-    pub fn new(world: Vec<Box<dyn Hittable>>, camera: Camera, config: TracerConfig) -> Self {
+    pub fn new(
+        world: Vec<Box<dyn Hittable + Send + Sync>>,
+        camera: Camera,
+        config: TracerConfig,
+    ) -> Self {
         Self {
             world,
             camera,
@@ -181,15 +186,34 @@ impl Tracer {
         let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
 
         let samples_per_pixel: i32 = self.config.samples_per_pixel;
-        let width = self.config.width as usize;
-        for (idx, mut pixel) in self.enumerate() {
-            // Write filter-type byte every row
-            if idx % width == 0 {
-                e.write_all(&[0])?;
-            }
-            pixel.correct_color(1. / samples_per_pixel as f32);
-            e.write_all(&[pixel.r(), pixel.g(), pixel.b()])?;
-        }
+        let data: Vec<u8> = (0..self.config.height)
+            .into_par_iter()
+            .rev()
+            .flat_map(|y| (0..self.config.width).into_par_iter().map(move |x| (x, y)))
+            .map(|(x, y)| {
+                let _j = y as f32;
+                let _i = x as f32;
+                let mut pixel = Color::new(0., 0., 0.);
+                let mut rng = SmallRng::from_entropy();
+                for _ in 0..self.config.samples_per_pixel {
+                    let u = (_i + rng.gen::<f32>()) / self.config.max_u;
+                    let v = (_j + rng.gen::<f32>()) / self.config.max_v;
+                    let ray = (&self.camera).get_ray(u, v);
+                    pixel = pixel + ray_color(ray, &self.world, self.config.max_depth);
+                }
+
+                // Write filter-type byte every row
+                pixel.correct_color(1. / samples_per_pixel as f32);
+                if x % self.config.width == 0 {
+                    [Some(0), Some(pixel.r()), Some(pixel.g()), Some(pixel.b())]
+                } else {
+                    [None, Some(pixel.r()), Some(pixel.g()), Some(pixel.b())]
+                }
+            })
+            .flatten()
+            .filter_map(|x| x)
+            .collect();
+        e.write_all(&data[..])?;
 
         let compressed = e.finish()?;
         file.write_all(&Chunk::new(ChunkType::from_str("IDAT").unwrap(), compressed).as_bytes())?;

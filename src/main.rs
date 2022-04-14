@@ -55,9 +55,9 @@ fn main() -> Result<()> {
         Sphere::new(Point::new(-1.0, 0.0, -1.0), 0.5, &MATERIAL_LEFT),
         Sphere::new(Point::new(1.0, 0.0, -1.0), 0.5, &MATERIAL_RIGHT),
     ];
-    let world: Vec<Box<dyn Hittable>> = spheres
+    let world: Vec<Box<dyn Hittable + Sync + Send>> = spheres
         .into_iter()
-        .map(|s| Box::new(s) as Box<dyn Hittable>)
+        .map(|s| Box::new(s) as Box<dyn Hittable + Sync + Send>)
         .collect();
 
     let config = TracerConfig::new(IMAGE_WIDTH, IMAGE_HEIGHT, SAMPLES_PER_PIXEL, MAX_DEPTH);

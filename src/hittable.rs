@@ -41,7 +41,7 @@ pub trait Hittable {
     fn hit(&self, ray: Ray, t_min: f32, t_max: f32) -> Option<HitRecord>;
 }
 
-impl Hittable for Vec<Box<dyn Hittable>> {
+impl Hittable for Vec<Box<dyn Hittable + Send + Sync>> {
     fn hit(&self, ray: Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let mut closest_hit = None;
         for hittable in self {
