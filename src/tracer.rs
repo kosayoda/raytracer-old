@@ -190,12 +190,12 @@ impl Tracer {
             .into_par_iter()
             .rev()
             .flat_map(|y| (0..self.config.width).into_par_iter().map(move |x| (x, y)))
-            .map(|(x, y)| {
-                let _j = y as f32;
+            .map_init(SmallRng::from_entropy, |rng, (x, y)| {
                 let _i = x as f32;
+                let _j = y as f32;
                 let mut pixel = Color::new(0., 0., 0.);
-                let mut rng = SmallRng::from_entropy();
-                for _ in 0..self.config.samples_per_pixel {
+
+                for _ in 0..samples_per_pixel {
                     let u = (_i + rng.gen::<f32>()) / self.config.max_u;
                     let v = (_j + rng.gen::<f32>()) / self.config.max_v;
                     let ray = (&self.camera).get_ray(u, v);
