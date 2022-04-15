@@ -144,7 +144,7 @@ impl Vec3 {
 
     /// Unit vector of the vector
     #[must_use]
-    pub fn unit_vector(self) -> Self {
+    pub fn unit_vector(self) -> Vec3 {
         self / self.length()
     }
 
@@ -178,10 +178,12 @@ impl Vec3 {
         self.z
     }
 
+    #[must_use]
     pub fn reflect(self, normal: Vec3) -> Vec3 {
         self - (normal * 2. * self.dot(normal))
     }
 
+    #[must_use]
     pub fn refract(self, normal: Vec3, etai_over_etat: f32) -> Vec3 {
         let cos_theta = Vec3::dot(-self, normal).min(1.);
         let r_out_perpendicular = etai_over_etat * (self + normal * cos_theta);
