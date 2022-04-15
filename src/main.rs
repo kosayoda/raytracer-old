@@ -5,7 +5,7 @@ use once_cell::sync::Lazy;
 
 use raytracer::camera::Camera;
 use raytracer::material::{Dielectric, Lambertian, Material, Metal};
-use raytracer::object::{Hittable, Sphere};
+use raytracer::object::{Object, Sphere};
 use raytracer::tracer::{Tracer, TracerConfig};
 use raytracer::vec3::{Color, Point};
 
@@ -47,17 +47,33 @@ fn main() -> Result<()> {
             fuzz: 0.0,
         })
     });
-    let spheres = vec![
-        Sphere::new(Point::new(0.0, -100.5, -1.0), 100., &MATERIAL_GROUND),
-        Sphere::new(Point::new(0.0, 0.0, -1.0), 0.5, &MATERIAL_CENTER),
-        Sphere::new(Point::new(-1.0, 0.0, -1.0), 0.5, &MATERIAL_LEFT),
-        Sphere::new(Point::new(-1.0, 0.0, -1.0), -0.4, &MATERIAL_LEFT),
-        Sphere::new(Point::new(1.0, 0.0, -1.0), 0.5, &MATERIAL_RIGHT),
+    let world = vec![
+        Object::from(Sphere::new(
+            Point::new(0.0, -100.5, -1.0),
+            100.,
+            &MATERIAL_GROUND,
+        )),
+        Object::from(Sphere::new(
+            Point::new(0.0, 0.0, -1.0),
+            0.5,
+            &MATERIAL_CENTER,
+        )),
+        Object::from(Sphere::new(
+            Point::new(-1.0, 0.0, -1.0),
+            0.5,
+            &MATERIAL_LEFT,
+        )),
+        Object::from(Sphere::new(
+            Point::new(-1.0, 0.0, -1.0),
+            -0.4,
+            &MATERIAL_LEFT,
+        )),
+        Object::from(Sphere::new(
+            Point::new(1.0, 0.0, -1.0),
+            0.5,
+            &MATERIAL_RIGHT,
+        )),
     ];
-    let world: Vec<Box<dyn Hittable + Sync + Send>> = spheres
-        .into_iter()
-        .map(|s| Box::new(s) as Box<dyn Hittable + Sync + Send>)
-        .collect();
 
     let config = TracerConfig::new(IMAGE_WIDTH, IMAGE_HEIGHT, SAMPLES_PER_PIXEL, MAX_DEPTH);
     let tracer = Tracer::new(world, camera, config);

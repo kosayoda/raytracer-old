@@ -3,6 +3,7 @@ use crate::object::{HitRecord, Hittable};
 use crate::ray::Ray;
 use crate::vec3::{Point, Vec3};
 
+#[derive(Debug, PartialEq)]
 pub struct Sphere {
     center: Point,
     radius: f32,

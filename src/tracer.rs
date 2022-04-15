@@ -11,8 +11,8 @@ use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
 
 use crate::camera::Camera;
-use crate::object::Hittable;
 use crate::material::Scatterable;
+use crate::object::{Hittable, Object};
 use crate::png::Chunk;
 use crate::png::ChunkType;
 use crate::ray::Ray;
@@ -41,7 +41,7 @@ impl TracerConfig {
 }
 
 pub struct Tracer {
-    world: Vec<Box<dyn Hittable + Send + Sync>>,
+    world: Vec<Object>,
     camera: Camera,
     config: TracerConfig,
     current_x: i32,
@@ -50,11 +50,7 @@ pub struct Tracer {
 }
 
 impl Tracer {
-    pub fn new(
-        world: Vec<Box<dyn Hittable + Send + Sync>>,
-        camera: Camera,
-        config: TracerConfig,
-    ) -> Self {
+    pub fn new(world: Vec<Object>, camera: Camera, config: TracerConfig) -> Self {
         Self {
             world,
             camera,

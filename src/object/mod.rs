@@ -1,3 +1,5 @@
+use enum_dispatch::enum_dispatch;
+
 use crate::material::Material;
 use crate::primitive::ray::Ray;
 use crate::primitive::vec3::{Point, Vec3};
@@ -52,11 +54,18 @@ impl HitRecord {
     }
 }
 
+#[enum_dispatch]
 pub trait Hittable {
     fn hit(&self, ray: Ray, t_min: f32, t_max: f32) -> Option<HitRecord>;
 }
 
-impl Hittable for Vec<Box<dyn Hittable + Send + Sync>> {
+#[enum_dispatch(Hittable)]
+#[derive(Debug, PartialEq)]
+pub enum Object {
+    Sphere,
+}
+
+impl Hittable for Vec<Object> {
     fn hit(&self, ray: Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let mut closest_hit = None;
         let mut closest_so_far = t_max;
