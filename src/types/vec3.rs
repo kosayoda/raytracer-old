@@ -160,7 +160,7 @@ impl Vec3 {
 
     /// Whether the vector is close to zero in all dimensions
     pub fn is_near_zero(self) -> bool {
-        self.x.abs() < f32::EPSILON && self.y.abs() < f32::EPSILON && self.z.abs() < f32::EPSILON
+        self.x.abs() < 1e-8_f32 && self.y.abs() < 1e-8_f32 && self.z.abs() < 1e-8_f32
     }
 
     /// Get the vec3's x.

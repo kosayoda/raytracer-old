@@ -59,24 +59,29 @@ impl Scatterable for Metal {
             record.point(),
             reflected + self.fuzz * Vec3::new_random_in_unit_sphere(),
         );
-        Some(ScatterResult {
-            ray: scattered,
-            attenuation: self.albedo,
-        })
+
+        if scattered.direction().dot(record.normal()) > 0. {
+            Some(ScatterResult {
+                ray: scattered,
+                attenuation: self.albedo,
+            })
+        } else {
+            None
+        }
     }
 }
 
 fn refract(vector: &Vec3, normal: &Vec3, etai_over_etat: f32) -> Vec3 {
     let cos_theta = (-*vector).dot(*normal).min(1.);
     let r_out_perpendicular = etai_over_etat * (*vector + *normal * cos_theta);
-    let r_out_parallel = *normal * -(1. - r_out_perpendicular.length_squared()).abs().sqrt();
+    let r_out_parallel = *normal * -f32::sqrt(f32::abs(1. - r_out_perpendicular.length_squared())); // -((1. - r_out_perpendicular.length_squared()).sqrt());
     r_out_perpendicular + r_out_parallel
 }
 
 fn reflectance(cosine: f32, ref_idx: f32) -> f32 {
     // Shlick's approximation
-    let mut r0 = (1. - ref_idx) / (1. + ref_idx);
-    r0 = r0 * r0;
+    let r0 = (1. - ref_idx) / (1. + ref_idx);
+    let r0 = r0 * r0;
     r0 + (1. - r0) * (1. - cosine).powi(5)
 }
 
@@ -98,12 +103,12 @@ impl Scatterable for Dielectric {
         let cos_theta = (-unit_direction).dot(record.normal()).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
+        let cannot_refract = (refraction_ratio * sin_theta) > 1.;
         let mut rng = SmallRng::from_entropy();
+        let should_reflect = reflectance(cos_theta, refraction_ratio) > rng.gen::<f32>();
 
         // Cannot refract
-        let direction = if (refraction_ratio * sin_theta - 1.0) > f32::EPSILON
-            || reflectance(cos_theta, refraction_ratio) > rng.gen::<f32>()
-        {
+        let direction = if cannot_refract || should_reflect {
             reflect(&unit_direction, &record.normal())
         } else {
             refract(&unit_direction, &record.normal(), refraction_ratio)

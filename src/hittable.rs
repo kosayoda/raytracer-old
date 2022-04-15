@@ -56,18 +56,13 @@ pub trait Hittable {
 impl Hittable for Vec<Box<dyn Hittable + Send + Sync>> {
     fn hit(&self, ray: Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let mut closest_hit = None;
+        let mut closest_so_far = t_max;
+
         for hittable in self {
             // If we hit something
-            if let Some(h) = hittable.hit(ray, t_min, t_max) {
-                // Compare with the current closest hit
-                match closest_hit {
-                    None => closest_hit = Some(h),
-                    Some(c) => {
-                        if h.t < c.t {
-                            closest_hit = Some(h);
-                        }
-                    }
-                }
+            if let Some(h) = hittable.hit(ray, t_min, closest_so_far) {
+                closest_hit = Some(h);
+                closest_so_far = h.t;
             }
         }
         closest_hit
