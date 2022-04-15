@@ -1,8 +1,8 @@
 pub mod camera;
-pub mod hittable;
 pub mod material;
+pub mod object;
 mod png;
 pub mod tracer;
-mod types;
 
-pub use types::{ray, sphere, vec3};
+mod primitive;
+pub use primitive::{ray, vec3};

@@ -4,9 +4,8 @@ use anyhow::Result;
 use once_cell::sync::Lazy;
 
 use raytracer::camera::Camera;
-use raytracer::hittable::Hittable;
 use raytracer::material::{Dielectric, Lambertian, Material, Metal};
-use raytracer::sphere::Sphere;
+use raytracer::object::{Hittable, Sphere};
 use raytracer::tracer::{Tracer, TracerConfig};
 use raytracer::vec3::{Color, Point};
 

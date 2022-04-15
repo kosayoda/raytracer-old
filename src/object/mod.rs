@@ -1,6 +1,9 @@
 use crate::material::Material;
-use crate::types::ray::Ray;
-use crate::types::vec3::{Point, Vec3};
+use crate::primitive::ray::Ray;
+use crate::primitive::vec3::{Point, Vec3};
+
+mod sphere;
+pub use sphere::Sphere;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct HitRecord {

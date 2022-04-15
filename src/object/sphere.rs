@@ -1,8 +1,7 @@
-use super::ray::Ray;
-use super::vec3::Point;
-use crate::hittable::{HitRecord, Hittable};
 use crate::material::Material;
-use crate::vec3::Vec3;
+use crate::object::{HitRecord, Hittable};
+use crate::ray::Ray;
+use crate::vec3::{Point, Vec3};
 
 pub struct Sphere {
     center: Point,

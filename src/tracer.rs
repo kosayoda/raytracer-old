@@ -11,7 +11,7 @@ use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
 
 use crate::camera::Camera;
-use crate::hittable::Hittable;
+use crate::object::Hittable;
 use crate::material::Scatterable;
 use crate::png::Chunk;
 use crate::png::ChunkType;

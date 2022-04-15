@@ -177,6 +177,18 @@ impl Vec3 {
     pub fn z(self) -> f32 {
         self.z
     }
+
+    pub fn reflect(self, normal: Vec3) -> Vec3 {
+        self - (normal * 2. * self.dot(normal))
+    }
+
+    pub fn refract(self, normal: Vec3, etai_over_etat: f32) -> Vec3 {
+        let cos_theta = Vec3::dot(-self, normal).min(1.);
+        let r_out_perpendicular = etai_over_etat * (self + normal * cos_theta);
+        let r_out_parallel =
+            normal * -f32::sqrt(f32::abs(1. - r_out_perpendicular.length_squared()));
+        r_out_perpendicular + r_out_parallel
+    }
 }
 
 impl Color {
