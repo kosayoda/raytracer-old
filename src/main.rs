@@ -18,12 +18,20 @@ const SAMPLES_PER_PIXEL: i32 = 100;
 const MAX_DEPTH: i32 = 100;
 
 fn main() -> Result<()> {
+    let look_from = Point::new(3., 3., 2.);
+    let look_at = Point::new(0., 0., -1.);
+    let vup = Vec3::new(0., 1., 0.);
+    let dist_to_focus = (look_from - look_at).length();
+    let aperture = 2.0;
+
     let camera = Camera::new(
-        Point::new(-2., 2., 1.),
-        Point::new(0., 0., -1.),
-        Vec3::new(0., 1., 0.),
+        look_from,
+        look_at,
+        vup,
         20.,
         ASPECT_RATIO,
+        aperture,
+        dist_to_focus,
     );
 
     // Create materials

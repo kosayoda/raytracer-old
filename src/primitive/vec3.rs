@@ -113,6 +113,18 @@ impl Vec3 {
     }
 
     /// Create a new Vec3 with random coordinates
+    pub fn new_random_in_unit_disk() -> Self {
+        let mut p;
+        let mut rng = SmallRng::from_entropy();
+        loop {
+            p = Vec3::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0), 0.);
+            if p.length_squared() < 1. {
+                return p;
+            }
+        }
+    }
+
+    /// Create a new Vec3 with random coordinates
     pub fn new_random_unit_vector() -> Self {
         Vec3::new_random_in_unit_sphere().unit_vector()
     }
