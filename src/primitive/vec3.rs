@@ -92,7 +92,7 @@ impl Vec3 {
     }
 
     /// Create a new Vec3 with random coordinates
-    pub fn new_random(_min: f32, _max: f32) -> Self {
+    pub fn new_random_range(_min: f32, _max: f32) -> Self {
         let mut rng = SmallRng::from_entropy();
         Self {
             x: rng.gen_range(_min.._max),
@@ -102,10 +102,20 @@ impl Vec3 {
     }
 
     /// Create a new Vec3 with random coordinates
+    pub fn new_random() -> Self {
+        let mut rng = SmallRng::from_entropy();
+        Self {
+            x: rng.gen::<f32>(),
+            y: rng.gen::<f32>(),
+            z: rng.gen::<f32>(),
+        }
+    }
+
+    /// Create a new Vec3 with random coordinates
     pub fn new_random_in_unit_sphere() -> Self {
         let mut p;
         loop {
-            p = Vec3::new_random(-1., 1.);
+            p = Vec3::new_random_range(-1., 1.);
             if p.length_squared() < 1. {
                 return p;
             }

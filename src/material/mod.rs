@@ -22,7 +22,7 @@ pub trait Scatterable {
 }
 
 #[enum_dispatch(Scatterable)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Material {
     Lambertian,
     Metal,

@@ -7,11 +7,11 @@ use crate::vec3::{Point, Vec3};
 pub struct Sphere {
     center: Point,
     radius: f32,
-    material: &'static Material,
+    material: Material,
 }
 
 impl Sphere {
-    pub fn new(center: Point, radius: f32, material: &'static Material) -> Self {
+    pub fn new(center: Point, radius: f32, material: Material) -> Self {
         Self {
             center,
             radius,

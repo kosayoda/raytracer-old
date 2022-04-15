@@ -13,7 +13,7 @@ pub struct HitRecord {
     normal: Vec3,
     t: f32,
     is_front_face: bool,
-    material: &'static Material,
+    material: Material,
 }
 
 impl HitRecord {
@@ -22,7 +22,7 @@ impl HitRecord {
         normal: Vec3,
         t: f32,
         is_front_face: bool,
-        material: &'static Material,
+        material: Material,
     ) -> Self {
         Self {
             point,
@@ -45,7 +45,7 @@ impl HitRecord {
         self.t
     }
 
-    pub fn material(self) -> &'static Material {
+    pub fn material(self) -> Material {
         self.material
     }
 

@@ -6,7 +6,7 @@ use crate::{
 
 use super::{ScatterResult, Scatterable};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Metal {
     pub albedo: Color,
     pub fuzz: f32,
