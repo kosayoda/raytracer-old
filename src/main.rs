@@ -14,7 +14,7 @@ use raytracer::vec3::{Color, Point};
 const ASPECT_RATIO: f32 = 16. / 9.;
 const IMAGE_WIDTH: i32 = 400;
 const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f32 / ASPECT_RATIO) as i32;
-const SAMPLES_PER_PIXEL: i32 = 16;
+const SAMPLES_PER_PIXEL: i32 = 50;
 
 const MAX_DEPTH: i32 = 100;
 

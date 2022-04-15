@@ -298,6 +298,7 @@ fn ray_color(ray: Ray, world: &dyn Hittable, depth: i32) -> Color {
     if depth <= 0 {
         return Color::new(0., 0., 0.);
     }
+
     if let Some(record) = world.hit(ray, 0.001, f32::MAX) {
         if let Some(res) = record.material().scatter(&ray, &record) {
             return res.attenuation * ray_color(res.ray, world, depth - 1);
@@ -308,8 +309,8 @@ fn ray_color(ray: Ray, world: &dyn Hittable, depth: i32) -> Color {
     let unit_direction = ray.direction().unit_vector();
     let t = 0.5 * (unit_direction.y() + 1.);
 
-    let max_y = Color::new(0.5, 0.7, 1.); // Blue
     let min_y = Color::new(1., 1., 1.); // White
+    let max_y = Color::new(0.5, 0.7, 1.); // Blue
 
     // Lerp pixel color based on distance to camera
     (1. - t) * min_y + t * max_y

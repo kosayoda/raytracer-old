@@ -59,14 +59,10 @@ impl Scatterable for Metal {
             record.point(),
             reflected + self.fuzz * Vec3::new_random_in_unit_sphere(),
         );
-        if scattered.direction().dot(record.normal()) > 0. {
-            Some(ScatterResult {
-                ray: scattered,
-                attenuation: self.albedo,
-            })
-        } else {
-            None
-        }
+        Some(ScatterResult {
+            ray: scattered,
+            attenuation: self.albedo,
+        })
     }
 }
 
@@ -81,7 +77,7 @@ fn reflectance(cosine: f32, ref_idx: f32) -> f32 {
     // Shlick's approximation
     let mut r0 = (1. - ref_idx) / (1. + ref_idx);
     r0 = r0 * r0;
-    r0 + (1. - r0) * f32::powi(1. - cosine, 5)
+    r0 + (1. - r0) * (1. - cosine).powi(5)
 }
 
 #[derive(Debug, PartialEq)]
@@ -105,7 +101,7 @@ impl Scatterable for Dielectric {
         let mut rng = SmallRng::from_entropy();
 
         // Cannot refract
-        let direction = if (refraction_ratio * sin_theta) > 1.0
+        let direction = if (refraction_ratio * sin_theta - 1.0) > f32::EPSILON
             || reflectance(cos_theta, refraction_ratio) > rng.gen::<f32>()
         {
             reflect(&unit_direction, &record.normal())

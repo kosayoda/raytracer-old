@@ -78,9 +78,9 @@ impl Div<f32> for Vec3 {
     type Output = Self;
     fn div(self, scalar: f32) -> Self {
         Self {
-            x: self.x * 1. / scalar,
-            y: self.y * 1. / scalar,
-            z: self.z * 1. / scalar,
+            x: self.x * (1. / scalar),
+            y: self.y * (1. / scalar),
+            z: self.z * (1. / scalar),
         }
     }
 }
@@ -112,10 +112,19 @@ impl Vec3 {
         }
     }
 
-    /// Create a new unit vector with random coordinates
+    /// Create a new Vec3 with random coordinates
     pub fn new_random_unit_vector() -> Self {
-        let v = Vec3::new_random_in_unit_sphere();
-        v.unit_vector()
+        Vec3::new_random_in_unit_sphere().unit_vector()
+    }
+
+    /// Create a new Vec3 with random coordinates
+    pub fn new_random_in_hemisphere(normal: &Vec3) -> Self {
+        let in_unit_sphere = Vec3::new_random_in_unit_sphere();
+        if in_unit_sphere.dot(*normal) > 0. {
+            in_unit_sphere
+        } else {
+            -in_unit_sphere
+        }
     }
 
     /// Dot product of two vectors
