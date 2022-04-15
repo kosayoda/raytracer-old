@@ -182,7 +182,6 @@ impl Tracer {
             &Chunk::new(ChunkType::from_str("IHDR").unwrap(), ihdr_data.to_vec()).as_bytes(),
         )?;
 
-        // TODO: Swap out flate2 for handwritten zlib compression
         let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
 
         let samples_per_pixel: i32 = self.config.samples_per_pixel;
@@ -204,16 +203,18 @@ impl Tracer {
 
                 // Write filter-type byte every row
                 pixel.correct_color(1. / samples_per_pixel as f32);
-                if x % self.config.width == 0 {
-                    [Some(0), Some(pixel.r()), Some(pixel.g()), Some(pixel.b())]
-                } else {
-                    [None, Some(pixel.r()), Some(pixel.g()), Some(pixel.b())]
-                }
+                [pixel.r(), pixel.g(), pixel.b()]
             })
             .flatten()
-            .filter_map(|x| x)
             .collect();
-        e.write_all(&data[..])?;
+
+        let width = self.config.width as usize;
+        for (index, pixel) in data.chunks(3).enumerate() {
+            if index % width == 0 {
+                e.write_all(&[0])?;
+            }
+            e.write_all(pixel)?;
+        }
 
         let compressed = e.finish()?;
         file.write_all(&Chunk::new(ChunkType::from_str("IDAT").unwrap(), compressed).as_bytes())?;
