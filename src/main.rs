@@ -7,7 +7,7 @@ use raytracer::camera::Camera;
 use raytracer::material::{Dielectric, Lambertian, Material, Metal};
 use raytracer::object::{Object, Sphere};
 use raytracer::tracer::{Tracer, TracerConfig};
-use raytracer::vec3::{Color, Point};
+use raytracer::vec3::{Color, Point, Vec3};
 
 // Image settings
 const ASPECT_RATIO: f32 = 16. / 9.;
@@ -17,13 +17,14 @@ const SAMPLES_PER_PIXEL: i32 = 100;
 
 const MAX_DEPTH: i32 = 100;
 
-// Camera settings
-const VIEWPORT_HEIGHT: f32 = 2.;
-const VIEWPORT_WIDTH: f32 = ASPECT_RATIO * VIEWPORT_HEIGHT;
-const FOCAL_LENGTH: f32 = 1.;
-
 fn main() -> Result<()> {
-    let camera = Camera::new(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, FOCAL_LENGTH);
+    let camera = Camera::new(
+        Point::new(-2., 2., 1.),
+        Point::new(0., 0., -1.),
+        Vec3::new(0., 1., 0.),
+        20.,
+        ASPECT_RATIO,
+    );
 
     // Create materials
     static MATERIAL_GROUND: Lazy<Material> = Lazy::new(|| {
@@ -65,7 +66,7 @@ fn main() -> Result<()> {
         )),
         Object::from(Sphere::new(
             Point::new(-1.0, 0.0, -1.0),
-            -0.4,
+            -0.45,
             &MATERIAL_LEFT,
         )),
         Object::from(Sphere::new(
