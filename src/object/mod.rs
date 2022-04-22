@@ -80,3 +80,19 @@ impl Hittable for Vec<Object> {
         closest_hit
     }
 }
+
+impl Hittable for [Object] {
+    fn hit(&self, ray: Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
+        let mut closest_hit = None;
+        let mut closest_so_far = t_max;
+
+        for hittable in self {
+            // If we hit something
+            if let Some(h) = hittable.hit(ray, t_min, closest_so_far) {
+                closest_hit = Some(h);
+                closest_so_far = h.t;
+            }
+        }
+        closest_hit
+    }
+}

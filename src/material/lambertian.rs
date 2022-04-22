@@ -17,6 +17,7 @@ impl Scatterable for Lambertian {
         if scatter_direction.is_near_zero() {
             scatter_direction = record.normal();
         }
+
         Some(ScatterResult {
             ray: Ray::new(record.point(), scatter_direction),
             attenuation: self.albedo,

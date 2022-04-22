@@ -25,30 +25,13 @@ static MATERIAL_GROUND: Lazy<Material> = Lazy::new(|| {
         albedo: Color::new(0.5, 0.5, 0.5),
     })
 });
-static MATERIAL_CENTER: Lazy<Material> = Lazy::new(|| {
-    Material::from(Lambertian {
-        albedo: Color::new(0.1, 0.2, 0.5),
-    })
-});
-static MATERIAL_LEFT: Lazy<Material> = Lazy::new(|| {
-    Material::from(Dielectric {
-        refractive_index: 1.5,
-    })
-});
-static MATERIAL_RIGHT: Lazy<Material> = Lazy::new(|| {
-    Material::from(Metal {
-        albedo: Color::new(0.8, 0.6, 0.2),
-        fuzz: 0.0,
-    })
-});
 
 fn random_scene() -> Vec<Object> {
-    let mut world: Vec<Object> = Vec::new();
-    world.push(Object::from(Sphere::new(
+    let mut world: Vec<Object> = vec![Object::from(Sphere::new(
         Point::new(0., -1000., 0.),
         1000.,
         *MATERIAL_GROUND,
-    )));
+    ))];
 
     let mut rng = SmallRng::from_entropy();
 

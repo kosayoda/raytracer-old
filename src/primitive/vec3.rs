@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub};
 
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -25,6 +25,14 @@ impl Add for Vec3 {
     }
 }
 
+impl AddAssign for Vec3 {
+    fn add_assign(&mut self, other: Self) {
+        self.x += other.x;
+        self.y += other.y;
+        self.z += other.z;
+    }
+}
+
 impl Sub for Vec3 {
     type Output = Self;
     fn sub(self, other: Self) -> Self {
@@ -47,6 +55,14 @@ impl Mul for Vec3 {
     }
 }
 
+impl MulAssign for Vec3 {
+    fn mul_assign(&mut self, other: Self) {
+        self.x *= other.x;
+        self.y *= other.y;
+        self.z *= other.z;
+    }
+}
+
 impl Neg for Vec3 {
     type Output = Self;
 
@@ -64,6 +80,14 @@ impl Mul<f32> for Vec3 {
             y: self.y * scalar,
             z: self.z * scalar,
         }
+    }
+}
+
+impl MulAssign<f32> for Vec3 {
+    fn mul_assign(&mut self, scalar: f32) {
+        self.x *= scalar;
+        self.y *= scalar;
+        self.z *= scalar;
     }
 }
 

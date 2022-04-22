@@ -194,7 +194,7 @@ impl Tracer {
                     let u = (_i + rng.gen::<f32>()) / self.config.max_u;
                     let v = (_j + rng.gen::<f32>()) / self.config.max_v;
                     let ray = (&self.camera).get_ray(u, v);
-                    pixel = pixel + ray_color(ray, &self.world, self.config.max_depth);
+                    pixel += ray_color(ray, &self.world, self.config.max_depth);
                 }
 
                 // Write filter-type byte every row
@@ -246,7 +246,7 @@ impl Iterator for Tracer {
             let u = (_i + rng.gen::<f32>()) / self.config.max_u;
             let v = (_j + rng.gen::<f32>()) / self.config.max_v;
             let ray = (&self.camera).get_ray(u, v);
-            pixel = pixel + ray_color(ray, &self.world, self.config.max_depth);
+            pixel += ray_color(ray, &self.world, self.config.max_depth);
         }
 
         self.current_x += 1;
@@ -282,7 +282,7 @@ impl DoubleEndedIterator for Tracer {
             let u = (_i + rng.gen::<f32>()) / self.config.max_u;
             let v = (_j + rng.gen::<f32>()) / self.config.max_v;
             let ray = (&self.camera).get_ray(u, v);
-            pixel = pixel + ray_color(ray, &self.world, self.config.max_depth);
+            pixel += ray_color(ray, &self.world, self.config.max_depth);
         }
 
         self.current_x += 1;
@@ -291,24 +291,31 @@ impl DoubleEndedIterator for Tracer {
     }
 }
 
-fn ray_color(ray: Ray, world: &dyn Hittable, depth: i32) -> Color {
-    if depth <= 0 {
-        return Color::new(0., 0., 0.);
-    }
+fn ray_color(ray: Ray, world: &[Object], depth: i32) -> Color {
+    let mut result = Color::new(0., 0., 0.);
+    let mut global_attenuation = Color::new(1., 1., 1.);
 
-    if let Some(record) = world.hit(ray, 0.001, f32::MAX) {
-        if let Some(res) = record.material().scatter(&ray, &record) {
-            return res.attenuation * ray_color(res.ray, world, depth - 1);
-        }
-        return Color::new(0., 0., 0.);
-    }
-
-    let unit_direction = ray.direction().unit_vector();
-    let t = 0.5 * (unit_direction.y() + 1.);
+    let mut current_ray = ray;
 
     let min_y = Color::new(1., 1., 1.); // White
     let max_y = Color::new(0.5, 0.7, 1.); // Blue
 
-    // Lerp pixel color based on distance to camera
-    (1. - t) * min_y + t * max_y
+    for _ in 0..depth {
+        if let Some(record) = world.hit(current_ray, 0.001, f32::MAX) {
+            if let Some(res) = record.material().scatter(&current_ray, &record) {
+                global_attenuation *= res.attenuation;
+                current_ray = res.ray;
+            } else {
+                break;
+            }
+        } else {
+            let unit_direction = current_ray.direction().unit_vector();
+            let t = 0.5 * (unit_direction.y() + 1.);
+
+            // Lerp pixel color based on distance to camera
+            result += ((1. - t) * min_y + t * max_y) * global_attenuation;
+            break;
+        }
+    }
+    result
 }
