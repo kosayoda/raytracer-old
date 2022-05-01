@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub};
 
 use rand::rngs::SmallRng;
@@ -6,7 +7,7 @@ use rand::{Rng, SeedableRng};
 pub type Point = Vec3;
 pub type Color = Vec3;
 
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy)]
 pub struct Vec3 {
     x: f32,
     y: f32,

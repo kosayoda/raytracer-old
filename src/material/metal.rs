@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     object::HitRecord,
     ray::Ray,
@@ -6,7 +8,7 @@ use crate::{
 
 use super::{ScatterResult, Scatterable};
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy)]
 pub struct Metal {
     pub albedo: Color,
     pub fuzz: f32,

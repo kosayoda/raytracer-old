@@ -1,4 +1,5 @@
 use enum_dispatch::enum_dispatch;
+use serde::{Deserialize, Serialize};
 
 use crate::object::HitRecord;
 use crate::ray::Ray;
@@ -22,7 +23,7 @@ pub trait Scatterable {
 }
 
 #[enum_dispatch(Scatterable)]
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy)]
 pub enum Material {
     Lambertian,
     Metal,

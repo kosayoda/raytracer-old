@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use enum_dispatch::enum_dispatch;
 
 use crate::material::Material;
@@ -60,7 +62,7 @@ pub trait Hittable {
 }
 
 #[enum_dispatch(Hittable)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Object {
     Sphere,
 }

@@ -17,7 +17,6 @@ impl Camera {
     pub fn new(
         look_from: Point,
         look_at: Point,
-        vup: Vec3,
         viewport_fov: f32,
         aspect_ratio: f32,
         aperture: f32,
@@ -27,6 +26,7 @@ impl Camera {
         let viewport_height = 2. * h;
         let viewport_width = aspect_ratio * viewport_height;
 
+        let vup = Vec3::new(0., 1., 0.);
         let w = (look_from - look_at).unit_vector();
         let u = vup.cross(w).unit_vector();
         let v = w.cross(u);

@@ -1,4 +1,5 @@
 pub mod camera;
+pub mod config;
 pub mod material;
 pub mod object;
 mod png;

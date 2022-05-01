@@ -11,6 +11,7 @@ use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
 
 use crate::camera::Camera;
+use crate::config::RaytracerConfig;
 use crate::material::Scatterable;
 use crate::object::{Hittable, Object};
 use crate::png::Chunk;
@@ -18,46 +19,28 @@ use crate::png::ChunkType;
 use crate::ray::Ray;
 use crate::vec3::{Color, Vec3};
 
-pub struct TracerConfig {
-    width: i32,
-    height: i32,
-    max_u: f32,
-    max_v: f32,
-    samples_per_pixel: i32,
-    max_depth: i32,
-}
-
-impl TracerConfig {
-    pub fn new(width: i32, height: i32, samples_per_pixel: i32, max_depth: i32) -> Self {
-        Self {
-            width,
-            height,
-            samples_per_pixel,
-            max_depth,
-            max_u: (width - 1) as f32,
-            max_v: (height - 1) as f32,
-        }
-    }
-}
-
 pub struct Tracer {
-    world: Vec<Object>,
     camera: Camera,
-    config: TracerConfig,
+    config: RaytracerConfig,
     current_x: i32,
     current_y_forward: i32,
     current_y_backward: i32,
+    max_u: f32,
+    max_v: f32,
 }
 
 impl Tracer {
-    pub fn new(world: Vec<Object>, camera: Camera, config: TracerConfig) -> Self {
+    pub fn new(camera: Camera, config: RaytracerConfig) -> Self {
+        let max_u = (config.image_width - 1) as f32;
+        let max_v = (config.image_height - 1) as f32;
         Self {
-            world,
             camera,
             current_x: 0,
-            current_y_forward: config.height - 1,
+            current_y_forward: config.image_height - 1,
             current_y_backward: 0,
             config,
+            max_u,
+            max_v,
         }
     }
 
@@ -84,7 +67,11 @@ impl Tracer {
 
         // Write header
         writeln!(file, "P3")?;
-        writeln!(file, "{} {}", self.config.width, self.config.height)?;
+        writeln!(
+            file,
+            "{} {}",
+            self.config.image_width, self.config.image_height
+        )?;
         writeln!(file, "{}", 255)?; // Maximum color
 
         // Write pixels
@@ -121,11 +108,12 @@ impl Tracer {
         ];
 
         let bits_per_pixel: i32 = 24;
-        let row_size = (((bits_per_pixel * self.config.width) as f32 / 32.).ceil() * 4.) as usize;
-        let data_size = row_size * self.config.height as usize;
+        let row_size =
+            (((bits_per_pixel * self.config.image_width) as f32 / 32.).ceil() * 4.) as usize;
+        let data_size = row_size * self.config.image_height as usize;
 
-        dib_header[4..=7].copy_from_slice(&(self.config.width as u32).to_le_bytes());
-        dib_header[8..=11].copy_from_slice(&(self.config.height as u32).to_le_bytes());
+        dib_header[4..=7].copy_from_slice(&(self.config.image_width as u32).to_le_bytes());
+        dib_header[8..=11].copy_from_slice(&(self.config.image_height as u32).to_le_bytes());
         dib_header[14..=15].copy_from_slice(&(bits_per_pixel as u16).to_le_bytes());
         dib_header[20..=23].copy_from_slice(&(data_size as u32).to_le_bytes());
 
@@ -135,9 +123,9 @@ impl Tracer {
         file.write_all(&bitmap_file_header)?;
         file.write_all(&dib_header)?;
 
-        let padding_required = (4 - self.config.width % 4) % 4;
+        let padding_required = (4 - self.config.image_width % 4) % 4;
         let samples_per_pixel: i32 = self.config.samples_per_pixel;
-        let width = self.config.width as usize;
+        let width = self.config.image_width as usize;
         for (idx, mut pixel) in self.rev().enumerate() {
             pixel.correct_color(1. / samples_per_pixel as f32);
             file.write_all(&[pixel.b(), pixel.g(), pixel.r()])?;
@@ -171,8 +159,8 @@ impl Tracer {
             0x0,  // Filter method
             0x0,  // Interlace method
         ];
-        ihdr_data[0..=3].copy_from_slice(&(self.config.width as u32).to_be_bytes());
-        ihdr_data[4..=7].copy_from_slice(&(self.config.height as u32).to_be_bytes());
+        ihdr_data[0..=3].copy_from_slice(&(self.config.image_width as u32).to_be_bytes());
+        ihdr_data[4..=7].copy_from_slice(&(self.config.image_height as u32).to_be_bytes());
 
         file.write_all(
             &Chunk::new(ChunkType::from_str("IHDR").unwrap(), ihdr_data.to_vec()).as_bytes(),
@@ -181,20 +169,24 @@ impl Tracer {
         let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
 
         let samples_per_pixel: i32 = self.config.samples_per_pixel;
-        let data: Vec<u8> = (0..self.config.height)
+        let data: Vec<u8> = (0..self.config.image_height)
             .into_par_iter()
             .rev()
-            .flat_map(|y| (0..self.config.width).into_par_iter().map(move |x| (x, y)))
+            .flat_map(|y| {
+                (0..self.config.image_width)
+                    .into_par_iter()
+                    .map(move |x| (x, y))
+            })
             .map_init(SmallRng::from_entropy, |rng, (x, y)| {
                 let _i = x as f32;
                 let _j = y as f32;
                 let mut pixel = Color::new(0., 0., 0.);
 
                 for _ in 0..samples_per_pixel {
-                    let u = (_i + rng.gen::<f32>()) / self.config.max_u;
-                    let v = (_j + rng.gen::<f32>()) / self.config.max_v;
+                    let u = (_i + rng.gen::<f32>()) / self.max_u;
+                    let v = (_j + rng.gen::<f32>()) / self.max_v;
                     let ray = (&self.camera).get_ray(u, v);
-                    pixel += ray_color(ray, &self.world, self.config.max_depth);
+                    pixel += ray_color(ray, &self.config.world, self.config.max_depth);
                 }
 
                 // Write filter-type byte every row
@@ -204,7 +196,7 @@ impl Tracer {
             .flatten()
             .collect();
 
-        let width = self.config.width as usize;
+        let width = self.config.image_width as usize;
         for (index, pixel) in data.chunks(3).enumerate() {
             if index % width == 0 {
                 e.write_all(&[0])?;
@@ -227,11 +219,11 @@ impl Iterator for Tracer {
 
     fn next(&mut self) -> Option<Self::Item> {
         // No more lines
-        if self.current_y_forward == 0 && self.current_x == self.config.width {
+        if self.current_y_forward == 0 && self.current_x == self.config.image_width {
             return None;
         }
         // Move to next line
-        if self.current_x == self.config.width {
+        if self.current_x == self.config.image_width {
             eprint!("\rScanlines remaining: {}", self.current_y_forward);
             self.current_y_forward -= 1;
             self.current_x = 0;
@@ -243,10 +235,10 @@ impl Iterator for Tracer {
 
         let mut rng = SmallRng::from_entropy();
         for _ in 0..self.config.samples_per_pixel {
-            let u = (_i + rng.gen::<f32>()) / self.config.max_u;
-            let v = (_j + rng.gen::<f32>()) / self.config.max_v;
+            let u = (_i + rng.gen::<f32>()) / self.max_u;
+            let v = (_j + rng.gen::<f32>()) / self.max_v;
             let ray = (&self.camera).get_ray(u, v);
-            pixel += ray_color(ray, &self.world, self.config.max_depth);
+            pixel += ray_color(ray, &self.config.world, self.config.max_depth);
         }
 
         self.current_x += 1;
@@ -258,16 +250,17 @@ impl Iterator for Tracer {
 impl DoubleEndedIterator for Tracer {
     fn next_back(&mut self) -> Option<Self::Item> {
         // No more lines
-        if self.current_y_backward == self.config.height + 1 && self.current_x == self.config.width
+        if self.current_y_backward == self.config.image_height + 1
+            && self.current_x == self.config.image_width
         {
             return None;
         }
 
         // Move to next line
-        if self.current_x == self.config.width {
+        if self.current_x == self.config.image_width {
             eprint!(
                 "\rScanlines remaining: {}",
-                self.config.height - self.current_y_backward
+                self.config.image_height - self.current_y_backward
             );
             self.current_y_backward += 1;
             self.current_x = 0;
@@ -279,10 +272,10 @@ impl DoubleEndedIterator for Tracer {
         let mut pixel = Color::new(0., 0., 0.);
 
         for _ in 0..self.config.samples_per_pixel {
-            let u = (_i + rng.gen::<f32>()) / self.config.max_u;
-            let v = (_j + rng.gen::<f32>()) / self.config.max_v;
+            let u = (_i + rng.gen::<f32>()) / self.max_u;
+            let v = (_j + rng.gen::<f32>()) / self.max_v;
             let ray = (&self.camera).get_ray(u, v);
-            pixel += ray_color(ray, &self.world, self.config.max_depth);
+            pixel += ray_color(ray, &self.config.world, self.config.max_depth);
         }
 
         self.current_x += 1;
