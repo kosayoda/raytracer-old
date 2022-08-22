@@ -42,7 +42,7 @@ impl Scatterable for Dielectric {
         };
 
         Some(ScatterResult {
-            ray: Ray::new(record.point(), direction),
+            ray: Ray::new(record.point(), direction, r_in.time()),
             attenuation: Color::new(1., 1., 1.),
         })
     }

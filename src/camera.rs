@@ -1,7 +1,13 @@
+use std::ops::RangeInclusive;
+
+use rand::prelude::Distribution;
+use rand::SeedableRng;
+use rand::{distributions::Uniform, rngs::SmallRng};
+
 use crate::primitive::ray::Ray;
 use crate::primitive::vec3::{Point, Vec3};
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone)]
 pub struct Camera {
     origin: Point,
     lower_left: Point,
@@ -11,6 +17,7 @@ pub struct Camera {
     v: Vec3,
     w: Vec3,
     lens_radius: f32,
+    rand_dist: Uniform<f32>,
 }
 
 impl Camera {
@@ -21,6 +28,7 @@ impl Camera {
         aspect_ratio: f32,
         aperture: f32,
         focus_dist: f32,
+        time: Option<RangeInclusive<f32>>,
     ) -> Self {
         let h = (viewport_fov.to_radians() / 2.).tan();
         let viewport_height = 2. * h;
@@ -38,6 +46,7 @@ impl Camera {
         let lower_left = origin - horizontal / 2. - vertical / 2. - focus_dist * w;
         let lens_radius = aperture / 2.;
 
+        let rand_dist = Uniform::from(time.unwrap_or(0.0..=0.0));
         Self {
             origin,
             horizontal,
@@ -47,6 +56,7 @@ impl Camera {
             v,
             w,
             lens_radius,
+            rand_dist,
         }
     }
 
@@ -56,9 +66,13 @@ impl Camera {
 
         let horizontal_offset = u * self.horizontal;
         let vertical_offset = v * self.vertical;
+
+        let mut rng = SmallRng::from_entropy();
+        let rand_time = self.rand_dist.sample(&mut rng);
         Ray::new(
             self.origin + offset,
             self.lower_left + horizontal_offset + vertical_offset - self.origin - offset,
+            rand_time,
         )
     }
 }

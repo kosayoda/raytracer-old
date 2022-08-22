@@ -14,14 +14,14 @@ pub struct Lambertian {
 }
 
 impl Scatterable for Lambertian {
-    fn scatter(&self, _: &Ray, record: &HitRecord) -> Option<ScatterResult> {
+    fn scatter(&self, r_in: &Ray, record: &HitRecord) -> Option<ScatterResult> {
         let mut scatter_direction = record.normal() + Vec3::new_random_unit_vector();
         if scatter_direction.is_near_zero() {
             scatter_direction = record.normal();
         }
 
         Some(ScatterResult {
-            ray: Ray::new(record.point(), scatter_direction),
+            ray: Ray::new(record.point(), scatter_direction, r_in.time()),
             attenuation: self.albedo,
         })
     }

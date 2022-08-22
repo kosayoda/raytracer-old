@@ -6,7 +6,9 @@ use crate::material::Material;
 use crate::primitive::ray::Ray;
 use crate::primitive::vec3::{Point, Vec3};
 
+mod moving_sphere;
 mod sphere;
+pub use moving_sphere::MovingSphere;
 pub use sphere::Sphere;
 
 #[derive(Debug, Copy, Clone, PartialEq)]

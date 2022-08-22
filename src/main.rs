@@ -1,12 +1,11 @@
 use std::fs::File;
 use std::io::BufReader;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{arg, Command};
 
 use raytracer::camera::Camera;
-use raytracer::config::RaytracerConfig;
 use raytracer::tracer::Tracer;
 
 fn main() -> Result<()> {
@@ -15,9 +14,14 @@ fn main() -> Result<()> {
         .arg(arg!(-s --save <save> "The path to save the render").required(false))
         .get_matches();
 
-    let scene = matches.value_of("scene").map(PathBuf::from).unwrap();
-    let reader = BufReader::new(File::open(scene)?);
-    let config: RaytracerConfig = serde_json::from_reader(reader)?;
+    let config = match matches.value_of("scene").unwrap() {
+        "builtin.rtiow_final" => raytracer::scenes::rtiow_final::scene(),
+        _ => {
+            let scene = matches.value_of("scene").map(PathBuf::from).unwrap();
+            let reader = BufReader::new(File::open(scene)?);
+            serde_json::from_reader(reader)?
+        }
+    };
 
     let aspect_ratio: f32 = config.image_width as f32 / config.image_height as f32;
     let camera = Camera::new(
@@ -29,6 +33,7 @@ fn main() -> Result<()> {
         config
             .focal_length
             .unwrap_or_else(|| (config.look_from - config.look_to).length()),
+        None,
     );
 
     let tracer = Tracer::new(camera, config);

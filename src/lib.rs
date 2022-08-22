@@ -3,6 +3,7 @@ pub mod config;
 pub mod material;
 pub mod object;
 mod png;
+pub mod scenes;
 pub mod tracer;
 
 mod primitive;

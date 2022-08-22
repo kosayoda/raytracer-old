@@ -20,6 +20,7 @@ impl Scatterable for Metal {
         let scattered = Ray::new(
             record.point(),
             reflected + self.fuzz * Vec3::new_random_in_unit_sphere(),
+            r_in.time(),
         );
 
         if scattered.direction().dot(record.normal()) > 0. {
