@@ -1,114 +1,23 @@
-use std::path::Path;
+use std::fs::File;
+use std::io::BufReader;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
+use clap::{arg, Command};
 
 use raytracer::camera::Camera;
 use raytracer::config::RaytracerConfig;
 use raytracer::tracer::Tracer;
 
 fn main() -> Result<()> {
-    let json = r#"
-        {
-            "look_from": {"x": -2, "y": 2, "z": 1},
-            "look_to": {"x": 0, "y": 0, "z": -1},
-            "focal_length": 20,
-            "aperture": 0,
-            "world": [
-                {
-                  "Sphere": {
-                    "center": {
-                      "x": 0,
-                      "y": -100.5,
-                      "z": -1
-                    },
-                    "radius": 100,
-                    "material": {
-                      "Lambertian": {
-                        "albedo": {
-                          "x": 0.8,
-                          "y": 0.8,
-                          "z": 0
-                        }
-                      }
-                    }
-                  }
-                },
-                {
-                  "Sphere": {
-                    "center": {
-                      "x": 0,
-                      "y": 0,
-                      "z": -1
-                    },
-                    "radius": 0.5,
-                    "material": {
-                      "Lambertian": {
-                        "albedo": {
-                          "x": 0.1,
-                          "y": 0.2,
-                          "z": 0.5
-                        }
-                      }
-                    }
-                  }
-                },
-                {
-                  "Sphere": {
-                    "center": {
-                      "x": -1,
-                      "y": 0,
-                      "z": -1
-                    },
-                    "radius": 0.5,
-                    "material": {
-                      "Dielectric": {
-                        "refractive_index": 0.5
-                      }
-                    }
-                  }
-                },
-                {
-                  "Sphere": {
-                    "center": {
-                      "x": -1,
-                      "y": 0,
-                      "z": -1
-                    },
-                    "radius": -0.45,
-                    "material": {
-                      "Dielectric": {
-                        "refractive_index": 0.5
-                      }
-                    }
-                  }
-                },
-                {
-                  "Sphere": {
-                    "center": {
-                      "x": 1,
-                      "y": 0,
-                      "z": -1
-                    },
-                    "radius": 0.5,
-                    "material": {
-                      "Metal": {
-                        "albedo": {
-                          "x": 0.8,
-                          "y": 0.6,
-                          "z": 0.2
-                        },
-                        "fuzz": 0
-                      }
-                    }
-                  }
-                }
-            ]
-        }
-    "#;
-    let config: RaytracerConfig = serde_json::from_str(json)?;
-    for object in &config.world {
-        println!("{:?}", object);
-    }
+    let matches = Command::new("raytracer")
+        .arg(arg!(<scene> "The scene to render"))
+        .arg(arg!(-s --save <save> "The path to save the render").required(false))
+        .get_matches();
+
+    let scene = matches.value_of("scene").map(PathBuf::from).unwrap();
+    let reader = BufReader::new(File::open(scene)?);
+    let config: RaytracerConfig = serde_json::from_reader(reader)?;
 
     let aspect_ratio: f32 = config.image_width as f32 / config.image_height as f32;
     let camera = Camera::new(
@@ -122,7 +31,11 @@ fn main() -> Result<()> {
 
     let tracer = Tracer::new(camera, config);
 
-    tracer.save(Path::new("image.png"))?;
-    eprintln!("\nDone!");
+    let save_path = matches
+        .value_of("save")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("image.png"));
+    tracer.save(&save_path)?;
+
     Ok(())
 }
