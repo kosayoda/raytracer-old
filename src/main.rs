@@ -26,7 +26,9 @@ fn main() -> Result<()> {
         config.viewport_fov,
         aspect_ratio,
         config.aperture,
-        config.focal_length,
+        config
+            .focal_length
+            .unwrap_or_else(|| (config.look_from - config.look_to).length()),
     );
 
     let tracer = Tracer::new(camera, config);

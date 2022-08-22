@@ -17,7 +17,7 @@ pub struct RaytracerConfig {
     pub viewport_fov: f32,
     #[serde(default = "default_aperture")]
     pub aperture: f32,
-    pub focal_length: f32,
+    pub focal_length: Option<f32>,
     pub look_from: Point,
     pub look_to: Point,
     pub world: Vec<Object>,
